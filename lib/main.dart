@@ -6,11 +6,15 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   print("Starting Gemma Flutter application");
   
-  // By default, the application runs in mock mode
-  // Uncomment the line below to use native implementation with actual GGUF model
-  // ConsolidatedGemmaService.setMockMode(false);
+  // We're now using native mode by default, which uses the actual GGUF model
+  // Native mode is set in the ConsolidatedGemmaService class
+  // If you need mock mode for testing, uncomment this line:
+  // ConsolidatedGemmaService.setMockMode(true);
   
-  // Pre-initialize the model in the background
+  // Pre-initialize the model in the background with status updates
+  print("Starting model initialization in the background...");
+  print("NOTE: Loading large models may take several minutes on first run");
+  
   ConsolidatedGemmaService.initModel().then((success) {
     print("Background model initialization ${success ? 'succeeded' : 'failed'}");
   });

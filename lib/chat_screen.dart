@@ -36,10 +36,30 @@ class _ChatScreenState extends State<ChatScreen> {
 
     try {
       print("Starting model initialization...");
+      print("IMPORTANT: First run may take several minutes to copy and load the model");
+      
+      // Update UI with loading message
+      setState(() {
+        _messages.add(ChatMessage(
+          text: "Initializing Gemma model... This may take several minutes on first run.",
+          isUser: false,
+        ));
+      });
+      
       bool success = await ConsolidatedGemmaService.initModel();
       
       setState(() {
         _isModelInitialized = success;
+        
+        // Update the initialization message
+        if (_messages.isNotEmpty) {
+          _messages[0] = ChatMessage(
+            text: success 
+                ? "Model initialized successfully! You can now ask questions."
+                : "Model initialization failed. Please try restarting the app.",
+            isUser: false,
+          );
+        }
       });
       
       if (success) {

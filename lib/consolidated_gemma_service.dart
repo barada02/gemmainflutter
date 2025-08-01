@@ -9,7 +9,7 @@ import 'llama_helper.dart';
 class ConsolidatedGemmaService {
   // Configuration
   static const String MODEL_FILE_NAME = 'gemma-3n-E2B-it-UD-IQ2_XXS.gguf';
-  static bool _useMockMode = false; // Set to false to use native implementation when ready
+  static bool _useMockMode = false; // Native mode is now the default
   
   // Shared state
   static final StreamController<String> _responseController = 
@@ -81,11 +81,11 @@ class ConsolidatedGemmaService {
       // Copy model from assets to a readable location
       final modelPath = await _getModelPath();
       
-      // Setup parameters matching the reference implementation
+      // Setup parameters with reduced values for better performance on mobile
       final contextParams = ContextParams();
-      contextParams.nPredict = 8192;  // Maximum number of tokens to predict
-      contextParams.nCtx = 8192;      // Context size
-      contextParams.nBatch = 512;     // Batch size for prompt processing
+      contextParams.nPredict = 4096;  // Reduced max tokens to predict (was 8192)
+      contextParams.nCtx = 2048;      // Reduced context size (was 8192)
+      contextParams.nBatch = 256;     // Reduced batch size (was 512)
 
       final samplerParams = SamplerParams();
       samplerParams.temp = 0.7;       // Temperature (higher = more creative, lower = more deterministic)
@@ -108,17 +108,18 @@ class ConsolidatedGemmaService {
       
       await _llamaParent!.init();
       
-      // Add a timeout to prevent infinite waiting
+      // Add a timeout to prevent infinite waiting - increased for larger models
       int attempts = 0;
-      const maxAttempts = 60;
+      const maxAttempts = 120; // Increased from 60 to 120
       
       print("Waiting for model to be ready...");
+      print("This may take several minutes for large models. Please be patient.");
       while (_llamaParent!.status != LlamaStatus.ready && attempts < maxAttempts) {
-        await Future.delayed(Duration(milliseconds: 500));
+        await Future.delayed(Duration(milliseconds: 1000)); // Increased from 500ms to 1000ms
         attempts++;
         
         if (attempts % 10 == 0) {
-          print("Still waiting... Status: ${_llamaParent!.status}");
+          print("Still waiting... Status: ${_llamaParent!.status}, attempt $attempts/$maxAttempts");
         }
         
         if (_llamaParent!.status == LlamaStatus.error) {
@@ -169,10 +170,15 @@ class ConsolidatedGemmaService {
   
   /// Send a prompt to the model
   static Future<void> sendPrompt(String userInput) async {
-    if (_useMockMode) {
-      await _sendMockPrompt(userInput);
-    } else {
-      await _sendNativePrompt(userInput);
+    try {
+      if (_useMockMode) {
+        await _sendMockPrompt(userInput);
+      } else {
+        await _sendNativePrompt(userInput);
+      }
+    } catch (e) {
+      print("Error in sendPrompt: $e");
+      _responseController.addError("Failed to process prompt: $e");
     }
   }
   
@@ -244,7 +250,7 @@ class ConsolidatedGemmaService {
     }
   }
   
-  /// Extract the model from assets to a readable location
+  /// Extract the model from assets to a readable location using chunking for large files
   static Future<String> _getModelPath() async {
     try {
       final directory = await getApplicationDocumentsDirectory();
@@ -254,8 +260,37 @@ class ConsolidatedGemmaService {
         print("Copying model from assets to ${modelFile.path}");
         
         try {
-          final data = await rootBundle.load('assets/$MODEL_FILE_NAME');
-          await modelFile.writeAsBytes(data.buffer.asUint8List());
+          // Create file and directory structure
+          await modelFile.create(recursive: true);
+          
+          // Open the asset as a ByteData for reading
+          final assetFile = await rootBundle.load('assets/$MODEL_FILE_NAME');
+          final totalSize = assetFile.lengthInBytes;
+          print("Asset file size: $totalSize bytes (${totalSize / 1024 / 1024} MB)");
+          
+          // Use chunked approach for large files to avoid memory issues
+          final sink = modelFile.openWrite();
+          
+          // Copy in chunks of 50MB
+          const chunkSize = 50 * 1024 * 1024;
+          var offset = 0;
+          
+          while (offset < totalSize) {
+            final end = (offset + chunkSize < totalSize) 
+                ? offset + chunkSize 
+                : totalSize;
+                
+            final chunk = assetFile.buffer.asUint8List(
+                assetFile.offsetInBytes + offset, 
+                end - offset);
+                
+            sink.add(chunk);
+            offset = end;
+            print("Copied chunk: $offset / $totalSize bytes (${(offset / totalSize * 100).toStringAsFixed(1)}%)");
+          }
+          
+          await sink.flush();
+          await sink.close();
           print("Model copied successfully");
         } catch (e) {
           print("Error copying model from assets: $e");
@@ -269,7 +304,7 @@ class ConsolidatedGemmaService {
       if (await modelFile.exists()) {
         // Check file size to make sure it's not empty
         final fileSize = await modelFile.length();
-        print("Model file size: $fileSize bytes");
+        print("Model file size: $fileSize bytes (${fileSize / 1024 / 1024} MB)");
         
         if (fileSize == 0) {
           throw Exception("Model file exists but is empty");
