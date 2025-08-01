@@ -42,7 +42,7 @@ A Flutter application that integrates the Gemma LLM model using llama_cpp_dart.
 ## Application Structure
 - `main.dart`: Entry point of the application
 - `chat_screen.dart`: UI for interacting with the model
-- `gemma_service.dart`: Service for initializing and interacting with the Gemma model
+- `consolidated_gemma_service.dart`: Unified service for initializing and interacting with the Gemma model
 - `llama_helper.dart`: Helper for loading native libraries
 - `loading_screen.dart`: Loading screen during model initialization
 
@@ -50,6 +50,20 @@ A Flutter application that integrates the Gemma LLM model using llama_cpp_dart.
 - Chat interface for interacting with the Gemma model
 - Streaming responses as they are generated
 - Support for multiple platforms
+- Dual-mode implementation (mock and native)
+
+## Implementation Modes
+The application supports two operating modes:
+
+1. **Mock Mode** (Default): Simulates responses without using the native library, perfect for UI testing or when native compilation issues occur.
+
+2. **Native Mode**: Uses the full GGUF model with native libraries for actual AI responses.
+
+To switch between modes:
+```dart
+// Set to false to use native implementation
+ConsolidatedGemmaService.setMockMode(false);
+```
 
 ## Getting Started
 

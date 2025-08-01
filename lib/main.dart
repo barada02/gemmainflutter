@@ -1,7 +1,20 @@
 import 'package:flutter/material.dart';
 import 'chat_screen.dart';
+import 'consolidated_gemma_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  print("Starting Gemma Flutter application");
+  
+  // By default, the application runs in mock mode
+  // Uncomment the line below to use native implementation with actual GGUF model
+  // ConsolidatedGemmaService.setMockMode(false);
+  
+  // Pre-initialize the model in the background
+  ConsolidatedGemmaService.initModel().then((success) {
+    print("Background model initialization ${success ? 'succeeded' : 'failed'}");
+  });
+  
   runApp(const MyApp());
 }
 

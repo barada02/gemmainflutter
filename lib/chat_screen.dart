@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'gemma_service.dart';
+import 'consolidated_gemma_service.dart';
 import 'loading_screen.dart';
 
 class ChatMessage {
@@ -36,7 +36,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     try {
       print("Starting model initialization...");
-      bool success = await GemmaService.initModel();
+      bool success = await ConsolidatedGemmaService.initModel();
       
       setState(() {
         _isModelInitialized = success;
@@ -45,7 +45,7 @@ class _ChatScreenState extends State<ChatScreen> {
       if (success) {
         print("Model initialized successfully");
         // Listen to the stream for responses
-        GemmaService.responseStream.listen((token) {
+        ConsolidatedGemmaService.responseStream.listen((token) {
           setState(() {
             // Add token to the current response
             _currentResponse += token;
@@ -105,7 +105,7 @@ class _ChatScreenState extends State<ChatScreen> {
     
     // Send the prompt to the model
     try {
-      await GemmaService.sendPrompt(text);
+      await ConsolidatedGemmaService.sendPrompt(text);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error sending prompt: $e')),
@@ -221,7 +221,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    GemmaService.dispose();
+    ConsolidatedGemmaService.dispose();
     super.dispose();
   }
 }
