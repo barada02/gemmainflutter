@@ -18,9 +18,10 @@ class GemmaService {
       try {
         // For Android, we'll use the system's JNI loading mechanism
         if (Platform.isAndroid) {
-          // Leave empty for Android as the system will find the library in the jniLibs folder
-          Llama.libraryPath = "libllama.so"; // This will load from jniLibs
-          print("Using system JNI loading for Android");
+          // For Android, we use the system path for FFI to find the native library
+          // This should be loaded from android/app/src/main/jniLibs/[arch]/libllama.so
+          Llama.libraryPath = "libllama.so"; // Direct FFI lookup
+          print("Using Android FFI library lookup: ${Llama.libraryPath}");
         } else {
           // For other platforms, use our helper
           Llama.libraryPath = await LlamaHelper.getNativeLibraryPath();
@@ -41,17 +42,17 @@ class GemmaService {
       // Copy model from assets to a readable location
       final modelPath = await _getModelPath();
       
-      // Setup parameters
+      // Setup parameters matching the reference implementation
       final contextParams = ContextParams();
-      contextParams.nPredict = 4096;
-      contextParams.nCtx = 4096;
-      contextParams.nBatch = 512;
+      contextParams.nPredict = 8192;  // Maximum number of tokens to predict
+      contextParams.nCtx = 8192;      // Context size
+      contextParams.nBatch = 512;     // Batch size for prompt processing
 
       final samplerParams = SamplerParams();
-      samplerParams.temp = 0.7;
-      samplerParams.topK = 64;
-      samplerParams.topP = 0.95;
-      samplerParams.penaltyRepeat = 1.1;
+      samplerParams.temp = 0.7;       // Temperature (higher = more creative, lower = more deterministic)
+      samplerParams.topK = 64;        // Consider only top K tokens
+      samplerParams.topP = 0.95;      // Nucleus sampling threshold
+      samplerParams.penaltyRepeat = 1.1;  // Penalty for repeating tokens
       
       // Initialize load command for the isolate
       final loadCommand = LlamaLoad(
@@ -106,13 +107,30 @@ class GemmaService {
   
   // Set up listeners for the model responses
   static void _setupStreamListeners() {
+    // Listen for token stream
     _llamaParent!.stream.listen((token) {
       _responseStreamController.add(token);
     }, onError: (e) {
       print("STREAM ERROR: $e");
       _responseStreamController.addError(e);
     });
+    
+    // Listen for completion events
+    _llamaParent!.completions.listen((event) {
+      if (event.success) {
+        print("Completion finished successfully for prompt: ${event.promptId}");
+      } else {
+        print("Completion failed for prompt: ${event.promptId}");
+        _responseStreamController.addError("Completion failed");
+      }
+    }, onError: (e) {
+      print("COMPLETION ERROR: $e");
+    });
   }
+  
+  // Static chat history to maintain context between calls
+  static final ChatHistory _chatHistory = ChatHistory();
+  static bool _isFirstMessage = true;
   
   // Get a response from the model
   static Future<void> sendPrompt(String userInput) async {
@@ -122,17 +140,28 @@ class GemmaService {
     }
     
     try {
-      // Create chat history
-      ChatHistory chatHistory = ChatHistory();
-      chatHistory.addMessage(
-        role: Role.system,
-        content: "You are a helpful, concise assistant. Keep your answers informative but brief.",
-      );
-      chatHistory.addMessage(role: Role.user, content: userInput);
-      chatHistory.addMessage(role: Role.assistant, content: "");
+      // Initialize chat history with system prompt if it's the first message
+      if (_isFirstMessage) {
+        _chatHistory.addMessage(
+          role: Role.system,
+          content: "You are a helpful, concise assistant. Keep your answers informative but brief.",
+        );
+        _isFirstMessage = false;
+      }
       
-      // Prepare prompt for the model
-      String prompt = chatHistory.exportFormat(ChatFormat.gemini, leaveLastAssistantOpen: true);
+      // Add user message to history
+      _chatHistory.addMessage(role: Role.user, content: userInput);
+      
+      // Add empty assistant message that will be filled as tokens arrive
+      _chatHistory.addMessage(role: Role.assistant, content: "");
+      
+      // Prepare prompt for the model using Gemini format
+      String prompt = _chatHistory.exportFormat(
+        ChatFormat.gemini, 
+        leaveLastAssistantOpen: true
+      );
+      
+      print("Sending prompt to model...");
       
       // Send the prompt to the model
       await _llamaParent!.sendPrompt(prompt);
@@ -144,19 +173,43 @@ class GemmaService {
   
   // Extract the model from assets to a readable location
   static Future<String> _getModelPath() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final modelFile = File('${directory.path}/$MODEL_FILE_NAME');
-    
-    if (!await modelFile.exists()) {
-      print("Copying model from assets to ${modelFile.path}");
-      final data = await rootBundle.load('assets/$MODEL_FILE_NAME');
-      await modelFile.writeAsBytes(data.buffer.asUint8List());
-      print("Model copied successfully");
-    } else {
-      print("Model already exists at ${modelFile.path}");
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final modelFile = File('${directory.path}/$MODEL_FILE_NAME');
+      
+      if (!await modelFile.exists()) {
+        print("Copying model from assets to ${modelFile.path}");
+        
+        try {
+          final data = await rootBundle.load('assets/$MODEL_FILE_NAME');
+          await modelFile.writeAsBytes(data.buffer.asUint8List());
+          print("Model copied successfully");
+        } catch (e) {
+          print("Error copying model from assets: $e");
+          throw Exception("Failed to copy model file from assets: $e");
+        }
+      } else {
+        print("Model already exists at ${modelFile.path}");
+      }
+      
+      // Verify the file exists and is readable
+      if (await modelFile.exists()) {
+        // Check file size to make sure it's not empty
+        final fileSize = await modelFile.length();
+        print("Model file size: $fileSize bytes");
+        
+        if (fileSize == 0) {
+          throw Exception("Model file exists but is empty");
+        }
+      } else {
+        throw Exception("Model file doesn't exist after copy attempt");
+      }
+      
+      return modelFile.path;
+    } catch (e) {
+      print("Error in _getModelPath: $e");
+      rethrow;
     }
-    
-    return modelFile.path;
   }
   
   // Dispose resources

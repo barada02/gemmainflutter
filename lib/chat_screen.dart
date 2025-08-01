@@ -35,6 +35,7 @@ class _ChatScreenState extends State<ChatScreen> {
     });
 
     try {
+      print("Starting model initialization...");
       bool success = await GemmaService.initModel();
       
       setState(() {
@@ -42,6 +43,7 @@ class _ChatScreenState extends State<ChatScreen> {
       });
       
       if (success) {
+        print("Model initialized successfully");
         // Listen to the stream for responses
         GemmaService.responseStream.listen((token) {
           setState(() {
@@ -54,16 +56,19 @@ class _ChatScreenState extends State<ChatScreen> {
             }
           });
         }, onError: (error) {
+          print("Error from response stream: $error");
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error: $error')),
           );
         });
       } else {
+        print("Failed to initialize model");
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to initialize model')),
         );
       }
     } catch (e) {
+      print("Exception during model initialization: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error initializing model: $e')),
       );
