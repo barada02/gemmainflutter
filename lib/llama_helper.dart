@@ -22,15 +22,10 @@ class LlamaHelper {
   }
 
   static Future<String> _extractLibraryForAndroid(String libraryName) async {
-    final directory = await getApplicationSupportDirectory();
-    final libFile = File('${directory.path}/$libraryName');
-    
-    if (!await libFile.exists()) {
-      final data = await rootBundle.load('assets/libs/android/$libraryName');
-      await libFile.writeAsBytes(data.buffer.asUint8List());
-    }
-    
-    return libFile.path;
+    // For Android, we don't need to extract the library as it's loaded 
+    // directly from the jniLibs directory by the system
+    // Just return the library name, and the system will find it
+    return libraryName;
   }
 
   static Future<String> _extractLibraryForDesktop(String libraryName, String platform) async {

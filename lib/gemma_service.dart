@@ -16,8 +16,16 @@ class GemmaService {
     try {
       // Set up the library path using our helper
       try {
-        Llama.libraryPath = await LlamaHelper.getNativeLibraryPath();
-        print("Using llama library at: ${Llama.libraryPath}");
+        // For Android, we'll use the system's JNI loading mechanism
+        if (Platform.isAndroid) {
+          // Leave empty for Android as the system will find the library in the jniLibs folder
+          Llama.libraryPath = "libllama.so"; // This will load from jniLibs
+          print("Using system JNI loading for Android");
+        } else {
+          // For other platforms, use our helper
+          Llama.libraryPath = await LlamaHelper.getNativeLibraryPath();
+          print("Using llama library at: ${Llama.libraryPath}");
+        }
       } catch (e) {
         print("Failed to get library path: $e");
         // Fall back to bundled libraries if extraction fails

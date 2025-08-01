@@ -11,16 +11,22 @@ A Flutter application that integrates the Gemma LLM model using llama_cpp_dart.
 - Native libraries for your platform
 
 ### Native Libraries Setup
+
+#### For Android (Primary Target):
+1. Place `libllama.so` in these directories based on architecture:
+   - For 64-bit ARM devices (most modern phones):
+     `android/app/src/main/jniLibs/arm64-v8a/libllama.so`
+   - For 32-bit ARM devices (older phones):
+     `android/app/src/main/jniLibs/armeabi-v7a/libllama.so`
+
+#### For Other Platforms (If Needed Later):
 1. For Windows:
    - Place `llama.dll` in `assets/libs/windows/` folder
 
-2. For Android:
-   - Place `libllama.so` in `assets/libs/android/` folder
-
-3. For macOS:
+2. For macOS:
    - Place `libllama.dylib` in `assets/libs/macos/` folder
 
-4. For Linux:
+3. For Linux:
    - Place `libllama.so` in `assets/libs/linux/` folder
 
 ### Model Setup
