@@ -1,19 +1,11 @@
 import 'package:flutter/material.dart';
 import 'chat_screen.dart';
+import 'screens/model_download_screen.dart';
 import 'consolidated_gemma_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  print("Starting Gemma Flutter application");
-  
-  // By default, the application runs in mock mode
-  // Uncomment the line below to use native implementation with actual GGUF model
-  // ConsolidatedGemmaService.setMockMode(false);
-  
-  // Pre-initialize the model in the background
-  ConsolidatedGemmaService.initModel().then((success) {
-    print("Background model initialization ${success ? 'succeeded' : 'failed'}");
-  });
+  // Starting Gemma Flutter application
   
   runApp(const MyApp());
 }
@@ -21,15 +13,87 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Gemma Flutter',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
       ),
-      home: const ChatScreen(),
+      home: const AppFlowManager(),
     );
+  }
+}
+
+/// Manages the app flow - shows download screen or chat screen based on model availability
+class AppFlowManager extends StatefulWidget {
+  const AppFlowManager({super.key});
+
+  @override
+  State<AppFlowManager> createState() => _AppFlowManagerState();
+}
+
+class _AppFlowManagerState extends State<AppFlowManager> {
+  bool _isCheckingModel = true;
+  bool _hasDownloadedModel = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkModelAvailability();
+  }
+
+  Future<void> _checkModelAvailability() async {
+    try {
+      // Check if any model is ready
+      final isReady = await ConsolidatedGemmaService.isCurrentModelReady();
+      
+      if (mounted) {
+        setState(() {
+          _hasDownloadedModel = isReady;
+          _isCheckingModel = false;
+        });
+      }
+    } catch (e) {
+      // Error checking model availability: $e
+      if (mounted) {
+        setState(() {
+          _hasDownloadedModel = false;
+          _isCheckingModel = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isCheckingModel) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Checking models...',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // If no model is downloaded, show download screen
+    if (!_hasDownloadedModel) {
+      return const ModelDownloadScreen();
+    }
+
+    // If model is available, show chat screen
+    return const ChatScreen();
   }
 }
