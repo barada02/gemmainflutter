@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'consolidated_gemma_service.dart';
 import 'loading_screen.dart';
-import 'screens/model_download_screen.dart';
 
 class ChatMessage {
   final String text;
@@ -183,17 +182,31 @@ class _ChatScreenState extends State<ChatScreen> {
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gemma Chat'),
+        title: const Text('Gemma AI Chat'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pushReplacementNamed(context, '/download'),
+        ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              setState(() {
+                _messages.clear();
+                _currentResponse = '';
+                _messages.add(ChatMessage(
+                  text: "Chat reset. You can start a new conversation!",
+                  isUser: false,
+                ));
+              });
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.download_rounded),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ModelDownloadScreen(),
-                ),
-              );
+              Navigator.pushReplacementNamed(context, '/download');
             },
             tooltip: 'Manage Models',
           ),
