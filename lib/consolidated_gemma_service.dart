@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:llama_cpp_dart/llama_cpp_dart.dart';
 import 'llama_helper.dart';
+import 'services/model_download_manager.dart';
 
 /// Main Gemma service that handles both native and mock implementations
 class ConsolidatedGemmaService {
   // Configuration
-  static const String MODEL_FILE_NAME = 'gemma-3n-E2B-it-UD-IQ2_XXS.gguf';
+  static String _currentModelId = 'gemma-3n-E2B-it-UD-IQ2_XXS'; // Default model
   static bool _useMockMode = false; // Native mode is now the default
+  static final ModelDownloadManager _downloadManager = ModelDownloadManager();
   
   // Shared state
   static final StreamController<String> _responseController = 
@@ -55,20 +55,23 @@ class ConsolidatedGemmaService {
   /// Initialize in native mode (actual GGUF model)
   static Future<bool> _initNativeMode() async {
     try {
+      // Check if model is downloaded
+      if (!await _downloadManager.isModelDownloaded(_currentModelId)) {
+        print("Model $_currentModelId not found. Please download it first.");
+        return false;
+      }
+
       // Set up the library path using our helper
       try {
         if (Platform.isAndroid) {
-          // For Android, use the system path for FFI to find the native library
           Llama.libraryPath = await LlamaHelper.getNativeLibraryPath();
           print("Using Android FFI library lookup: ${Llama.libraryPath}");
         } else {
-          // For other platforms, use our helper
           Llama.libraryPath = await LlamaHelper.getNativeLibraryPath();
           print("Using llama library at: ${Llama.libraryPath}");
         }
       } catch (e) {
         print("Failed to get library path: $e");
-        // Fall back to bundled libraries if extraction fails
         if (Platform.isAndroid) {
           Llama.libraryPath = "libllama.so";
         } else if (Platform.isWindows) {
@@ -78,8 +81,14 @@ class ConsolidatedGemmaService {
         }
       }
       
-      // Copy model from assets to a readable location
-      final modelPath = await _getModelPath();
+      // Get model path from downloaded file
+      final modelPath = await _downloadManager.getModelPath(_currentModelId);
+      if (modelPath == null) {
+        print("Could not get path for downloaded model $_currentModelId");
+        return false;
+      }
+      
+      print("Using downloaded model at: $modelPath");
       
       // Setup parameters with reduced values for better performance on mobile
       final contextParams = ContextParams();
@@ -249,77 +258,27 @@ class ConsolidatedGemmaService {
     }
   }
   
-  /// Extract the model from assets to a readable location using chunking for large files
-  static Future<String> _getModelPath() async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-      final modelFile = File('${directory.path}/$MODEL_FILE_NAME');
-      
-      if (!await modelFile.exists()) {
-        print("Copying model from assets to ${modelFile.path}");
-        
-        try {
-          // Create file and directory structure
-          await modelFile.create(recursive: true);
-          
-          // Open the asset as a ByteData for reading
-          final assetFile = await rootBundle.load('assets/$MODEL_FILE_NAME');
-          final totalSize = assetFile.lengthInBytes;
-          print("Asset file size: $totalSize bytes (${totalSize / 1024 / 1024} MB)");
-          
-          // Use chunked approach for large files to avoid memory issues
-          final sink = modelFile.openWrite();
-          
-          // Copy in chunks of 50MB
-          const chunkSize = 50 * 1024 * 1024;
-          var offset = 0;
-          
-          while (offset < totalSize) {
-            final end = (offset + chunkSize < totalSize) 
-                ? offset + chunkSize 
-                : totalSize;
-                
-            final chunk = assetFile.buffer.asUint8List(
-                assetFile.offsetInBytes + offset, 
-                end - offset);
-                
-            sink.add(chunk);
-            offset = end;
-            print("Copied chunk: $offset / $totalSize bytes (${(offset / totalSize * 100).toStringAsFixed(1)}%)");
-          }
-          
-          await sink.flush();
-          await sink.close();
-          print("Model copied successfully");
-        } catch (e) {
-          print("Error copying model from assets: $e");
-          throw Exception("Failed to copy model file from assets: $e");
-        }
-      } else {
-        print("Model already exists at ${modelFile.path}");
-      }
-      
-      // Verify the file exists and is readable
-      if (await modelFile.exists()) {
-        // Check file size to make sure it's not empty
-        final fileSize = await modelFile.length();
-        print("Model file size: $fileSize bytes (${fileSize / 1024 / 1024} MB)");
-        
-        if (fileSize == 0) {
-          throw Exception("Model file exists but is empty");
-        }
-      } else {
-        throw Exception("Model file doesn't exist after copy attempt");
-      }
-      
-      return modelFile.path;
-    } catch (e) {
-      print("Error in _getModelPath: $e");
-      rethrow;
+  /// Set the current model to use
+  static Future<bool> setCurrentModel(String modelId) async {
+    if (!await _downloadManager.isModelDownloaded(modelId)) {
+      print("Model $modelId is not downloaded");
+      return false;
     }
+    _currentModelId = modelId;
+    print("Set current model to: $modelId");
+    return true;
   }
-  
-  /// Set the mode - mock or native
+
+  /// Get the current model ID
+  static String getCurrentModelId() => _currentModelId;
+
+  /// Check if the current model is ready
+  static Future<bool> isCurrentModelReady() async {
+    return await _downloadManager.isModelDownloaded(_currentModelId);
+  }
+
+  /// Get download manager instance
+  static ModelDownloadManager get downloadManager => _downloadManager;  /// Set the mode - mock or native
   static void setMockMode(bool useMock) {
     _useMockMode = useMock;
     print("Set mode to: ${useMock ? 'MOCK' : 'NATIVE'}");
@@ -329,5 +288,6 @@ class ConsolidatedGemmaService {
   static void dispose() {
     _llamaParent?.dispose();
     _responseController.close();
+    _downloadManager.dispose();
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'consolidated_gemma_service.dart';
 import 'loading_screen.dart';
+import 'screens/model_download_screen.dart';
 
 class ChatMessage {
   final String text;
@@ -173,12 +174,30 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading && _messages.isEmpty) {
-      return const LoadingScreen();
+      return LoadingScreen(
+        message: _isModelInitialized 
+          ? "Model ready! You can start chatting." 
+          : "Initializing model... This may take several minutes on first run.",
+      );
     }
     
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gemma Chat'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download_rounded),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ModelDownloadScreen(),
+                ),
+              );
+            },
+            tooltip: 'Manage Models',
+          ),
+        ],
       ),
       body: Column(
               children: [
