@@ -62,14 +62,14 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-              Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05),
-              Theme.of(context).colorScheme.surface,
+              Color(0xFF000428), // Dark blue-black
+              Color(0xFF004e92), // Deep blue
+              Color(0xFF1a1a2e), // Dark navy
             ],
           ),
         ),
@@ -92,15 +92,15 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         height: 120,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: LinearGradient(
+                          gradient: const LinearGradient(
                             colors: [
-                              Theme.of(context).colorScheme.primary,
-                              Theme.of(context).colorScheme.secondary,
+                              Color(0xFF4285F4), // Google Blue
+                              Color(0xFF1a73e8), // Darker blue
                             ],
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                              color: const Color(0xFFEA4335).withValues(alpha: 0.2), // Light red shadow
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),
@@ -127,14 +127,14 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         'Gemma AI',
                         style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface,
+                          color: Colors.white, // White text on dark background
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Powered by Google Gemma',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                          color: const Color(0xFFB3B3B3), // Light gray text
                         ),
                       ),
                     ],
@@ -187,10 +187,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             Navigator.pushReplacementNamed(context, '/download');
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            backgroundColor: const Color(0xFF4285F4), // Google Blue
                             foregroundColor: Colors.white,
                             elevation: 8,
-                            shadowColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                            shadowColor: const Color(0xFFEA4335).withValues(alpha: 0.4), // Red shadow
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -215,7 +215,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       Text(
                         'First time? We\'ll help you download the AI model',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                          color: const Color(0xFFB3B3B3), // Light gray text
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -239,12 +239,16 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+            color: const Color(0xFFEA4335).withValues(alpha: 0.15), // Light red background
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFFEA4335).withValues(alpha: 0.3), // Light red border
+              width: 1,
+            ),
           ),
           child: Icon(
             icon,
-            color: Theme.of(context).colorScheme.primary,
+            color: const Color(0xFF4285F4), // Blue icon
             size: 24,
           ),
         ),
@@ -257,12 +261,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 title,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
+                  color: Colors.white, // White text
                 ),
               ),
               Text(
                 description,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  color: const Color(0xFFB3B3B3), // Light gray text
                 ),
               ),
             ],
