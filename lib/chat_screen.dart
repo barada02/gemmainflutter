@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'consolidated_gemma_service.dart';
 import 'loading_screen.dart';
-import 'screens/model_download_screen.dart';
 
 class ChatMessage {
   final String text;
@@ -149,22 +148,42 @@ class _ChatScreenState extends State<ChatScreen> {
           if (!message.isUser) 
             Container(
               margin: const EdgeInsets.only(right: 16.0),
-              child: const CircleAvatar(child: Text('G')),
+              child: CircleAvatar(
+                backgroundColor: const Color(0xFF4285F4), // Google Blue
+                child: const Text('G', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
             ),
           Flexible(
             child: Container(
               padding: const EdgeInsets.all(15.0),
               decoration: BoxDecoration(
-                color: message.isUser ? Colors.blue[100] : Colors.grey[200],
+                color: message.isUser 
+                    ? const Color(0xFF4285F4) // Google Blue for user messages
+                    : const Color(0xFFF8F9FA), // Light gray for AI messages
                 borderRadius: BorderRadius.circular(20.0),
+                border: message.isUser 
+                    ? null 
+                    : Border.all(color: const Color(0xFFE8EAED)), // Light border for AI messages
               ),
-              child: Text(message.text),
+              child: Text(
+                message.text,
+                style: TextStyle(
+                  color: message.isUser 
+                      ? Colors.white // White text for user messages
+                      : const Color(0xFF202124), // Dark text for AI messages
+                  fontSize: 16,
+                  height: 1.4,
+                ),
+              ),
             ),
           ),
           if (message.isUser)
             Container(
               margin: const EdgeInsets.only(left: 16.0),
-              child: const CircleAvatar(child: Text('U')),
+              child: CircleAvatar(
+                backgroundColor: const Color(0xFFEA4335), // Google Red
+                child: const Text('U', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
             ),
         ],
       ),
@@ -183,77 +202,135 @@ class _ChatScreenState extends State<ChatScreen> {
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gemma Chat'),
+        title: const Text('Gemma AI Chat'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pushReplacementNamed(context, '/download'),
+        ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              setState(() {
+                _messages.clear();
+                _currentResponse = '';
+                _messages.add(ChatMessage(
+                  text: "Chat reset. You can start a new conversation!",
+                  isUser: false,
+                ));
+              });
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.download_rounded),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ModelDownloadScreen(),
-                ),
-              );
+              Navigator.pushReplacementNamed(context, '/download');
             },
             tooltip: 'Manage Models',
           ),
         ],
       ),
-      body: Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(8.0),
-                    reverse: false,
-                    itemCount: _messages.length,
-                    itemBuilder: (context, index) {
-                      return _buildMessageItem(_messages[index]);
-                    },
-                  ),
-                ),
-                if (_isLoading && _messages.isNotEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16.0),
-                    child: LinearProgressIndicator(),
-                  ),
-                const Divider(height: 1.0),
-                Container(
-                  decoration: BoxDecoration(color: Theme.of(context).cardColor),
-                  child: _buildTextComposer(),
-                ),
-              ],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              const Color(0xFFF8F9FA), // Light gray background
+              const Color(0xFFFFFFFF), // White
+            ],
+          ),
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16.0),
+                reverse: false,
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  return _buildMessageItem(_messages[index]);
+                },
+              ),
             ),
+            if (_isLoading && _messages.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: LinearProgressIndicator(
+                  backgroundColor: const Color(0xFFE8EAED),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    const Color(0xFF4285F4), // Google Blue
+                  ),
+                ),
+              ),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: const Color(0xFFE8EAED), width: 1),
+                ),
+              ),
+              child: _buildTextComposer(),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildTextComposer() {
-    return IconTheme(
-      data: IconThemeData(color: Theme.of(context).colorScheme.secondary),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: Row(
-          children: [
-            Flexible(
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Row(
+        children: [
+          Flexible(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24.0),
+                border: Border.all(color: const Color(0xFFE8EAED)),
+                color: const Color(0xFFF8F9FA),
+              ),
               child: TextField(
                 controller: _textController,
                 onSubmitted: _isModelInitialized && !_isLoading ? _handleSubmitted : null,
-                decoration: const InputDecoration.collapsed(
+                decoration: InputDecoration(
                   hintText: 'Send a message',
+                  hintStyle: TextStyle(color: const Color(0xFF5F6368)),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+                ),
+                style: TextStyle(
+                  color: const Color(0xFF202124),
+                  fontSize: 16,
                 ),
                 enabled: _isModelInitialized && !_isLoading,
+                maxLines: null,
               ),
             ),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: IconButton(
-                icon: const Icon(Icons.send),
-                onPressed: _isModelInitialized && !_isLoading
-                    ? () => _handleSubmitted(_textController.text)
-                    : null,
-              ),
+          ),
+          const SizedBox(width: 8.0),
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _isModelInitialized && !_isLoading 
+                  ? const Color(0xFF4285F4) // Google Blue
+                  : const Color(0xFFE8EAED), // Disabled gray
             ),
-          ],
-        ),
+            child: IconButton(
+              icon: Icon(
+                Icons.send,
+                color: _isModelInitialized && !_isLoading 
+                    ? Colors.white 
+                    : const Color(0xFF5F6368),
+              ),
+              onPressed: _isModelInitialized && !_isLoading
+                  ? () => _handleSubmitted(_textController.text)
+                  : null,
+            ),
+          ),
+        ],
       ),
     );
   }
