@@ -21,16 +21,22 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6366F1),
+          seedColor: const Color(0xFF4285F4), // Google Blue
           brightness: Brightness.light,
+        ).copyWith(
+          secondary: const Color(0xFFEA4335), // Google Red
+          tertiary: const Color(0xFF34A853), // Google Green
         ),
         fontFamily: 'Roboto',
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6366F1),
+          seedColor: const Color(0xFF4285F4), // Google Blue
           brightness: Brightness.dark,
+        ).copyWith(
+          secondary: const Color(0xFFEA4335), // Google Red
+          tertiary: const Color(0xFF34A853), // Google Green
         ),
         fontFamily: 'Roboto',
       ),

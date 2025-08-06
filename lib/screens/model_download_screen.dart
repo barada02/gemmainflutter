@@ -262,7 +262,7 @@ class _ModelDownloadScreenState extends State<ModelDownloadScreen> {
                         Navigator.pushReplacementNamed(context, '/chat');
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
+                        backgroundColor: Theme.of(context).colorScheme.tertiary, // Google Green
                         foregroundColor: Colors.white,
                         elevation: 4,
                         shape: RoundedRectangleBorder(
@@ -364,9 +364,9 @@ class _ModelDownloadScreenState extends State<ModelDownloadScreen> {
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Model downloaded successfully!'),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: const Text('Model downloaded successfully!'),
+              backgroundColor: Theme.of(context).colorScheme.tertiary, // Google Green
             ),
           );
         }
@@ -377,9 +377,9 @@ class _ModelDownloadScreenState extends State<ModelDownloadScreen> {
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Download failed. Please try again.'),
-              backgroundColor: Colors.red,
+            SnackBar(
+              content: const Text('Download failed. Please try again.'),
+              backgroundColor: Theme.of(context).colorScheme.secondary, // Google Red
             ),
           );
         }
@@ -393,7 +393,7 @@ class _ModelDownloadScreenState extends State<ModelDownloadScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.secondary, // Google Red
           ),
         );
       }

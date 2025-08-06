@@ -10,15 +10,8 @@ class ModelRepository {
       fileName: 'gemma-3n-E4B-it-UD-IQ2_XXS.gguf',
       sizeInBytes: 2831155200, // 2699.8MB = 2.7GB
       description: 'Ultra-quantized Gemma model optimized for mobile devices. Good balance of performance and size.',
-    ),
-    'gemma-2b-q4': AIModel(
-      id: 'gemma-2b-q4',
-      name: 'Gemma 2B Q4 (Alternative)',
-      url: 'https://huggingface.co/lmstudio-community/gemma-2b-it-GGUF/resolve/main/gemma-2b-it-q4_0.gguf?download=true',
-      fileName: 'gemma-2b-q4.gguf',
-      sizeInBytes: 800000000, // Approximate 800MB
-      description: 'Smaller Gemma model for faster inference on lower-end devices.',
-    ),
+    )
+    
   };
 
   static AIModel? getModel(String id) {
