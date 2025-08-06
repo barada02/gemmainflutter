@@ -7,8 +7,8 @@ class ModelRepository {
       id: 'gemma-3n-E2B-it-UD-IQ2_XXS',
       name: 'Gemma 3N E4B IT (Ultra Quantized)',
       url: 'https://huggingface.co/unsloth/gemma-3n-E4B-it-GGUF/resolve/main/gemma-3n-E4B-it-UD-IQ2_XXS.gguf?download=true',
-      fileName: 'gemma-3n-E4B-it-UD-IQ2_XXS.gguf',
-      sizeInBytes: 1900000000, // Approximate 1.9GB based on your APK size
+      fileName: 'gemma-3n-E4B-UD-IQ2_XXS.gguf',
+      sizeInBytes: 2831155200, // 2699.8MB = 2.7GB
       description: 'Ultra-quantized Gemma model optimized for mobile devices. Good balance of performance and size.',
     ),
     'gemma-2b-q4': AIModel(
